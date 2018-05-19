@@ -1,0 +1,193 @@
+
+\documentclass[12pt, a4paper, oneside, headinclude, footinclude]{article}
+
+\input{structure.tex}
+
+\title{\normalfont\spacedallcaps{Image analysis for disaster recovery, A DataKind report for the World Bank GFDRR}}
+
+\author{\spacedlowsmallcaps{Krishna Bhogaonker \& Patrick Doupe}} 
+
+\date{} 
+
+\begin{document}
+
+\renewcommand{\sectionmark}[1]{\markright{\spacedlowsmallcaps{#1}}} 
+\lehead{\mbox{\llap{\small\thepage\kern1em\color{halfgray} \vline}\color{halfgray}\hspace{0.5em}\rightmark\hfil}} 
+
+\pagestyle{scrheadings} 
+
+%----------------------------------------------------------------------------------------
+%	TABLE OF CONTENTS & LISTS OF FIGURES AND TABLES
+%----------------------------------------------------------------------------------------
+
+\maketitle 
+
+\setcounter{tocdepth}{2}
+
+\tableofcontents 
+
+\listoffigures 
+
+\listoftables 
+
+\listoflistings
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT
+%----------------------------------------------------------------------------------------
+
+\section*{Abstract} 
+
+
+We discuss how the World Bank can use machine learning and satellite images to
+improve disaster relief efforts. We include a review of image analysis with
+convolutional neural networks. These networks are illustrated with code
+examples using the Keras deep learning library. 
+
+
+%----------------------------------------------------------------------------------------
+%	AUTHOR AFFILIATIONS
+%----------------------------------------------------------------------------------------
+
+%\let\thefootnote\relax\footnotetext{* \textit{}}
+
+%\let\thefootnote\relax\footnotetext{\textsuperscript{1} \textit{}}
+
+%----------------------------------------------------------------------------------------
+
+\newpage 
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section{Introduction}
+
+The review of deep learning~\cite{lecun2015deep}.
+
+\subsection{Terms of reference or questions to be answered}
+
+\subsection{Main recommendations}
+
+
+%----------------------------------------------------------------------------------------
+%	METHODS
+%----------------------------------------------------------------------------------------
+
+\section{Frameworks}
+
+If we present methods, it would be good to introduce frameworks up front.
+
+\subsection{Keras}
+
+
+\begin{minted}{python}
+from keras.layers import Input
+from keras.layers import Dense
+from keras.models import Model
+
+# This returns a tensor
+inputs = Input(shape=(10,))
+predictions = Dense(1, activation='softmax')(inputs)
+model = Model(inputs=inputs, outputs=predictions)
+model.compile(optimizer='rmsprop',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+# starts training
+model.fit(data, labels)  
+\end{minted}
+
+
+
+\subsection{Tensorflow, PyTorch, Caffe, MXNet, etc.}
+
+Links to sites and  blog articles
+
+\section{Methods}
+
+\subsection{Why convolutional neural networks}
+
+Pixels are not independent of one another
+
+Results of image analysis
+
+\subsubsection{If you understand VGG-net, you're 80 per cent there}
+
+VGG net is super simple and easy to explain.
+
+\section{Literature}
+
+\subsection{Image classification}
+
+Krizhevsky ImageNet~\cite{NIPS2012_4824}
+
+VGG Net~\cite{SimonyanZ14a}
+
+ResNet~\cite{he2016deep}
+
+\subsection{Object detection}
+Using regression to do this~\cite{NIPS2013_5207}
+
+RCNN~\cite{Girshick2014, Girshick2015}
+
+Faster RCNN~\cite{Ren2017}
+
+Mask RCNN~\cite{he2017}
+
+R-FCN~\cite{NIPS2016_6465}
+
+YOLO~\cite{redmon2016yolo}
+
+SSD~\cite{liu2016ssd}
+
+    
+\subsection{Image segmentation}
+
+First fully convnet segmenter~\cite{long2015fully}
+
+Some more~\cite{chen2018, NIPS2015_5852}
+
+
+\subsection{Analysis with satellite images}
+
+Mexico~\cite{babenko2017poverty} (There are two WB co-authors)
+
+Poverty mapping~\cite{Jean790}
+
+Population~\cite{doupe2016, robinson2017}
+
+Private sector~\cite{facebook, cnn_orbital}
+
+\section{Satellite data}
+
+\subsection{Free sources}
+
+LANDSAT, Sentinel, 
+
+Quasi free: Bing
+
+\subsection{Expensive sources}
+
+Digital Globe, Planet Labs, Own drone data
+
+\subsection{Labelled data}
+
+\section{Examples}
+
+\subsection{Building detection}
+
+\section{Recommendations}
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+\renewcommand{\refname}{\spacedlowsmallcaps{References}} 
+
+\bibliographystyle{unsrt}
+
+\bibliography{review.bib}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
