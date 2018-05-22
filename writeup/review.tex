@@ -107,7 +107,10 @@ Links to sites and  blog articles
 
 \subsection{Why convolutional neural networks}
 
-Pixels are not independent of one another
+1. Pixels are not independent of one another
+2. With pictures, only relative position matters [Spatially stationary
+statistics]
+3. Much fewer neurons.
 
 Results of image analysis
 
@@ -119,11 +122,33 @@ VGG net is super simple and easy to explain.
 
 \subsection{Image classification}
 
+LeNet
+
 Krizhevsky ImageNet~\cite{NIPS2012_4824}
+\begin{itemize}
+    \item Used dropout to prevent overfitting
+    \item We start to go deep: 5 convolutional layers
+    \item Got best results to that date on a hard problem
+\end{itemize}
+
 
 VGG Net~\cite{SimonyanZ14a}
+\begin{itemize}
+    \item Increased depth (16--19 layers) with smaller filters
+    \item First/Second places at ImageNet2014
+    \item Widely used as a base :: need references.
+\end{itemize}
 
 ResNet~\cite{he2016deep}
+
+\begin{itemize}
+    \item Residual learning framework
+    \item Degradation became an issue with deep models. This makes no sense,
+        you could just have a shallower model with identity mappings. So
+        residual networks contain the identity mapping.
+    \item Crazy large :: 152 layers but with lower 'complexity'
+    \item Then state of the art.
+\end{itemize}
 
 \subsection{Object detection}
 Using regression to do this~\cite{NIPS2013_5207}
