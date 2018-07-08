@@ -28,22 +28,18 @@
 
 \listoffigures 
 
-\listoftables 
-
-\listoflistings
+\listoftables
 
 %----------------------------------------------------------------------------------------
 %	ABSTRACT
 %----------------------------------------------------------------------------------------
 
-\section*{Abstract} 
-
+\section*{Abstract}
 
 We discuss how the World Bank can use machine learning and satellite images to
 improve disaster relief efforts. We include a review of image analysis with
 convolutional neural networks. These networks are illustrated with code
 examples using the Keras deep learning library. 
-
 
 %----------------------------------------------------------------------------------------
 %	AUTHOR AFFILIATIONS
@@ -136,7 +132,7 @@ VGG Net~\cite{SimonyanZ14a}
 \begin{itemize}
     \item Increased depth (16--19 layers) with smaller filters
     \item First/Second places at ImageNet2014
-    \item Widely used as a base :: need references.
+    \item Widely used as a base: need references.
 \end{itemize}
 
 ResNet~\cite{he2016deep}
@@ -146,20 +142,146 @@ ResNet~\cite{he2016deep}
     \item Degradation became an issue with deep models. This makes no sense,
         you could just have a shallower model with identity mappings. So
         residual networks contain the identity mapping.
-    \item Crazy large :: 152 layers but with lower 'complexity'
+    \item Crazy large: 152 layers but with lower `complexity'
     \item Then state of the art.
 \end{itemize}
 
 \subsection{Object detection}
-Using regression to do this~\cite{NIPS2013_5207}
 
-RCNN~\cite{Girshick2014, Girshick2015}
+Classification + localising objects. The challenge: ``detect a \textit{potentially large
+number of object instances with varying sizes in the same image} using a
+limited amount of computing resources.''~\cite[Their emphasis]{NIPS2013_5207}
 
-Faster RCNN~\cite{Ren2017}
+Potentially
+useful~\url{https://towardsdatascience.com/object-detection-with-10-lines-of-code-d6cb4d86f606}
 
-Mask RCNN~\cite{he2017}
+\textbf{Using regression to do this}~\cite{NIPS2013_5207}
 
-R-FCN~\cite{NIPS2016_6465}
+The DNN based regression outputs a binary mask of the bounding box. 
+
+Seven layer network: five convolutional and two fully connected. ReLU and max
+pooling. Note that output much smaller than input.
+
+Instead of a softmax, they have a regression layer that outputs a binary mask:
+1 if image inside the box, 0 outside.\ 
+
+p. 3 Because base network highly non convex -> no guarantee for optimal solution ->
+regularisation.
+
+Regularisation: objects are small relative to image size, so an output of all
+0s is super common. Use regularisation to increase weights of non zero
+outputs.
+
+Have five networks: one for box predictions, four others for {top, bottom,
+left, right}. 
+It is possible to share layers. 
+
+Since output smaller than inputs, need to upscale
+
+The details regarding refinement etc are a little confusing. 
+
+Training: model needs to be trained with a huge amount of training data:
+objects of different sizes need to occur at almost every location. << is this
+an issue for satellite monitoring?
+
+Pre training on classification task used.
+
+Need to train a single model per object type and mask type.
+
+Doesn't work super well: mAP = 30.5\%
+
+\textbf{RCNN}~\cite{Girshick2014, Girshick2015}
+
+Regions with CNN features
+Improved on mAP (mean Average Precision) by more than 30\%. They get mAP of
+53.3\%. 
+
+Idea
+\begin{enumerate}
+    \item extract some 2k bounding boxes (region proposals)
+    \item warp boxes and run through CNN and SVM to classify
+\end{enumerate}
+
+Use `recognition using regions' paradigm.
+Alternatives: Regression like above, sliding windows.
+
+A challenge --- labelled data is scarce. Common answer is to do unsupervised
+pre training followed by supervised fine tuning. They also use supervised pre
+training on a large dataset.
+
+There are many options for proposing regions, RCNN uses `selective-search'
+They also use VGG net for features.
+
+RCNN is multi stage, expensive and s l o w. `R-CNN is slow because it performs
+a ConvNet forward pass for each object proposal, without sharing computation.
+(fast RCNN paper)'
+
+\textbf{Fast-RCNN} single stage training algorithm. 
+
+Spatial Pyramid Pooling Networks (SPPnets). SPPnets compute a feature map
+for image, classifies each object proposal using shared features. But this is
+a multi stage pipeline.
+
+Multi task loss function
+    (a) classification
+    (b) 4d regression for bounding box
+
+It's faster than SPPnet/RCNN but there is still a bottle neck of region
+proposals
+
+Use a single network for feature extraction, classification and bounding box.
+
+
+\textbf{Faster RCNN}~\cite{Ren2017}
+
+Because of proposal bottleneck: they propose a `Region Proposal Network.' RPNs
+share layers with the object detection networks --- this allows a speed up.
+E.g.\ from 2 or 0.2s per image to 10ms per image.
+
+The RPN is basically (?) an attention network.
+
+RPN takes anchors and (1) is this an object (2) can we adjust the anchor box
+a little to get better fit (rather than absolute corners, predict change from
+anchor box corners).
+
+FasterRCNN is trainable end to end.
+
+So at the end you get a set of overlapping proposals. If we have two
+overlapping images, discard one with lower classification score.
+
+\url{https://tryolabs.com/blog/2018/01/18/faster-r-cnn-down-the-rabbit-hole-of-modern-object-detection/}
+Predicing (xmin, xmax, ymin, ymax) is hard. For instance, how to enforce
+xmin < xmax
+
+Potential code:
+\url{https://github.com/jinfagang/keras\_frcnn/blob/master/keras\_frcnn/vgg.py}
+
+Useful overview:
+\url{https://blog.athelas.com/a-brief-history-of-cnns-in-image-segmentation-from-r-cnn-to-mask-r-cnn-34ea83205de4}
+
+\textbf{Mask RCNN}~\cite{he2017}
+
+We can do segmentation as well! Have a third branch that allows segmentation. 
+
+But there is a slight misalignment between bounding boxes and pixels because
+of pixel integers. The original image is say 200 $\times$ 200 and the feature map is
+say 30 * 30. So to select the top 15*15 corner we need 15 * 30 / 200 $\approx$
+2.25 pixels. RoIPool uses 2$\times$2. RoIAlign (this paper's innovation) uses
+bilinear interpolation to get an idea of what the 2.25th pixel is.
+
+
+\textbf{R-FCN}~\cite{NIPS2016_6465}
+
+The above apply a costly per region subnetwork hundreds of times :(
+
+\textit{Translation invariance} - the object can be anywhere in an image for
+correct classification
+
+\textit{Translation variance} - if we move the object, the bounding box should
+change. 
+
+Use an RPN for proposals.
+
 
 YOLO~\cite{redmon2016yolo}
 
@@ -168,9 +290,72 @@ SSD~\cite{liu2016ssd}
     
 \subsection{Image segmentation}
 
-First fully convnet segmenter~\cite{long2015fully}
+\includegraphics[width=0.5\textwidth]{Figures/segmentation-example.png}
+
+In one sense this is a simple extension of classification: but one prediction
+per pixel rather than one prediction per picture.
+
+With segmenation, there is a tension between `semantics and location.'
+\textit{Semantics} is the question of what, \textit{location} asks where.
+Local information helps answer the former and global information helps answer
+the latter. This need for two types of information gave rise to complicated
+models prior to the era of fully end to end differentiable models. This
+tension also explains the innovations beyond basic CNNs used for
+classification.
+
+Old methods: classifier applied to each object location and scale.
+See~\cite{NIPS2015_5852}.
+
+\paragraph{First fully convnet (trained end to end) segmenter}
+
+BTW, very good write up on convnets.~\cite{long2015fully}
+
+\includegraphics[width=0.5\textwidth]{Figures/long-segmentation.png}
+\begin{itemize}
+    \item uses in network upsampling
+    \item doesn't require complicated chaining of pieces
+    \item can use pre trained models
+    \item use a skip architecture to combine coarse semantic information and shallow
+appearance information.
+\end{itemize}
+There is a super easy way to make a simple CNN classifier a segmenter: make
+the fully connected layers have a different height and width for each of the
+4096 components.
+
+An issue: by the time you've gotten to predicting a pixel, you've lost a lot
+of the information on the surrounding pixels. The authors get around this by
+bringing intermediate layers back into the prediction.
+
+\includegraphics[width=0.75\textwidth]{Figures/skip-segmentation.png}
 
 Some more~\cite{chen2018, NIPS2015_5852}
+
+\paragraph{DeepLab}~\cite{chen2018}
+
+\begin{itemize}
+    \item convolution with upsampled filters --- allows control of resolution
+        (or the context without increasing the number of parameters)
+    \item spatial pyramid pooling: segment at multiple scales
+    \item use conditional random fields to improve location accuracy (max
+        pooling and down sampling lower locational accuracy)
+\end{itemize}
+
+They do this upsampling \textit{algorithme a trous} thing that~\cite{NIPS2015_5852}
+do (i think).
+
+\paragraph{Learning to segment object candidates}~\cite{NIPS2015_5852}
+
+A model trained with two objectives
+A convnet that branches out into two objecives.
+
+\begin{enumerate}
+    \item given an image patch ---  output a class agnostic segmentation mask
+    \item the likelihood of the patch being centered on a full object
+\end{enumerate}
+
+Model generalizes to unseen categories it has not seen during training. Strong
+work.
+
 
 
 \subsection{Analysis with satellite images}
@@ -196,6 +381,10 @@ Quasi free: Bing
 Digital Globe, Planet Labs, Own drone data
 
 \subsection{Labelled data}
+
+\subsection{Augmentation}
+
+Talk about data augmentation. For example, U-Net used this.
 
 \section{Examples}
 
