@@ -152,6 +152,8 @@ Classification + localising objects. The challenge: ``detect a \textit{potential
 number of object instances with varying sizes in the same image} using a
 limited amount of computing resources.''~\cite[Their emphasis]{NIPS2013_5207}
 
+Super basic model: slide a classifier across an image. This will be very slow.
+
 Potentially
 useful~\url{https://towardsdatascience.com/object-detection-with-10-lines-of-code-d6cb4d86f606}
 
@@ -282,12 +284,49 @@ change.
 
 Use an RPN for proposals.
 
+\textbf{YOLO}~\cite{redmon2016yolo}
 
-YOLO~\cite{redmon2016yolo}
+\url{http://www.youtube.com/watch?v=NM6lrxy0bxs}
 
-SSD~\cite{liu2016ssd}
+YOLO is super fast. Not most accurate tho. Might be useful for large satellite
+areas.
 
-    
+YOLO generalises to new domains (e.g. art)
+
+Divide image into S $\times$ S grid. 
+For each grid, 
+    1. have B bounding boxes. 
+    For each bounding box, 
+        predict 5 components (4 spatial {x, y, w, h}, 1 confidence). 
+        (x, y) -- center of the box relative to the bounds of the grid cell. 
+        (w, h) -- width and height relative to whole image
+        confidenc -- IOU between predicted and ground truth.
+    2. Predict C conditional class probabilities
+       Prob(Class | Object)
+       Only one set of class probabilities regardless of the number of boxes
+       B.
+
+At test time: the confidence * class probabilities for class specific
+confidence scores for each box.
+
+Use Google LeNet.
+
+Limitations: 
+1. strong spatial constraints -- hard coded grid size and number of
+bounding boxes and classes per box. Many small birds will be hard to predict.
+--- also houses ---
+
+2. struggles to generalise to objects with new aspect ratios. so will want a
+variety of house angles. may be difficult to work with damaged buildings 
+
+YOLO v2: big step was using imagenet and backproping classification on this
+data
+
+\textbf{SSD}~\cite{liu2016ssd}
+
+Similar to YOLO but use multiple feature maps (grid sizes). Faster, Stronger
+than YOLO v1.
+
 \subsection{Image segmentation}
 
 \includegraphics[width=0.5\textwidth]{Figures/segmentation-example.png}
