@@ -59,47 +59,95 @@ examples using the Keras deep learning library.
 
 \section{Introduction}
 
-The review of deep learning~\cite{lecun2015deep}.
+The capacity for computers to take images and return useful information has
+grown over the last decade. We have trained models detect numbers, to
+distinguishing between cats and dogs and to segmenting images by objects. In
+this article, we review this literature.
 
-\subsection{Terms of reference or questions to be answered}
+The review's guiding question is \textit{how can we use
+images and computers to identify areas at risk in a crisis}. We do this in
+two ways. First, by presentiting an intuitive understanding of various deep
+learning models and model types; second, by presenting applications of models
+using these methods and satellite images to generate insights. The philosophy
+of this review is not that the reader should expect to know how to build
+working prototypes, rather to understand them in sufficient detail so that
+they can better collaborate with trained researchers. We provide Python code and
+links to simple tutorials so that the reader can obtain a feel for how these
+things work. We present code rather than math. For a textbook treatment into
+deep learning, try~\cite{lecun2015deep}.
 
-\subsection{Main recommendations}
-
+The code is written in the Python language (version 3.7). This language is
+standard in both research and production of deep learning models. For an
+introduction to Python for economists, we recommend this tutorial by two
+top scholars
+(https://lectures.quantecon.org/py/index_learning_python.html).
 
 %----------------------------------------------------------------------------------------
 %	METHODS
 %----------------------------------------------------------------------------------------
 
-\section{Frameworks}
+\subsection{Deep learning Frameworks}
 
-If we present methods, it would be good to introduce frameworks up front.
+In addition to many languages, there are many different deep learning
+libraries (or frameworks). We focus in this review on \texttt{Keras}. We
+make this choice because of Keras' ease of use and interpretability. 
 
-\subsection{Keras}
+Downsides: speed, flexibility. Want evidence before making this claim. 
 
+Here is an example linear regression model with ten explanatory variables.
+We begin with importing some objects: an Input object which defines the shape
+of the explanatory varables; a Dense object which maps the data from the input
+shape to the output shape; a Model object which combines the two. Short of
+comment lines and importing data, we can run a regression model in under ten
+lines. Running simple deep networks is a matter of adding additional
+components.
 
 \begin{minted}{python}
+# import functions
 from keras.layers import Input
 from keras.layers import Dense
 from keras.models import Model
 
-# This returns a tensor
+# import data
+X = ...
+y = ...
+
+# set amount of explanatory (x) variables 
 inputs = Input(shape=(10,))
-predictions = Dense(1, activation='softmax')(inputs)
+# set outcome (y) variable
+predictions = Dense(1, activation='linear')(inputs)
+# define the model
 model = Model(inputs=inputs, outputs=predictions)
-model.compile(optimizer='rmsprop',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+# set loss function and optimizer
+model.compile(optimizer='rmsprop', loss='rmse', metrics=['accuracy'])
 # starts training
-model.fit(data, labels)  
+model.fit(X, y)  
 \end{minted}
 
-
+. That is, it is a matrix operation. The
+\texttt{activation} function takes the matrix output as an input and returns
+the model output.
+Optimizer: stochastic gradient descent. Passes losses back through the network
+via gradients.
 
 \subsection{Tensorflow, PyTorch, Caffe, MXNet, etc.}
 
-Links to sites and  blog articles
-
+TensorFlow: production
+PyTorch: research
+Caffe: ?
+MXNet: if you have amazon servers
+. That is, it is a matrix operation. The
+\texttt{activation} function takes the matrix output as an input and returns
+the model output.. That is, it is a matrix operation. The
+\texttt{activation} function takes the matrix output as an input and returns
+the model output.
 \section{Methods}
+
+Focus on deep learning // supervised learning is mapping inputs to outputs.
+
+Also unsupervised learning. Feature extraction.
+
+Transfer learning.
 
 \subsection{Why convolutional neural networks}
 
@@ -112,27 +160,74 @@ Results of image analysis
 
 \subsubsection{If you understand VGG-net, you're 80 per cent there}
 
-VGG net is super simple and easy to explain.
-
-\section{Literature}
-
-\subsection{Image classification}
-
-LeNet
-
-Krizhevsky ImageNet~\cite{NIPS2012_4824}
-\begin{itemize}
-    \item Used dropout to prevent overfitting
-    \item We start to go deep: 5 convolutional layers
-    \item Got best results to that date on a hard problem
-\end{itemize}
-
+VGG net is super simple and easy to explain. Started deep learning revolution.
 
 VGG Net~\cite{SimonyanZ14a}
 \begin{itemize}
     \item Increased depth (16--19 layers) with smaller filters
     \item First/Second places at ImageNet2014
     \item Widely used as a base: need references.
+\end{itemize}
+
+Repetative blocks: see appendix
+\begin{itemize}
+    \item convolutional: non independence of pixels
+    \item zero padding: to maintain shape
+    \item pooling: to extract most useful information
+    \item flattening: extract all of the information
+\end{itemize}
+
+It's plug and play
+
+\begin{minted}{python}
+from keras.applications.vgg16 import VGG16
+from keras.preprocessing import image
+from keras.applications.vgg16 import preprocess_input
+import numpy as np
+
+model = VGG16(weights='imagenet', include_top=True)
+
+img_path = 'remote_area_example.jpg'
+img = image.load_img(img_path, target_size=(224, 224))
+x = image.img_to_array(img)
+x = np.expand_dims(x, axis=0)
+x = preprocess_input(x)
+
+features = model.predict(x)
+\end{minted}
+
+Load `VGG16` object. The argument `include_top=False` means that we exclude
+the top layers. 
+
+\subsection{Pretraining}
+
+Unsupervised learning -- feature extraction. Benefit: others have used
+millions of images. These models extract information
+
+Super common strategy with limited information. You extract features and then
+only train top 512, 1024, 2048, 4096x2 layers. Very useful (our work with
+population, https://arxiv.org/abs/1510.00098).
+
+evidence??
+
+When you have lots of data and access to GPUs and your data is different to
+ImageNet, then there are advantages to training your own.
+
+When you have a small amount of labelled data, this works well.
+
+\section{Literature}
+
+\subsection{Image classification}
+
+LeNet (http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf)
+Conv => Pool => Conv => Pool => Flattened => prediction
+
+Krizhevsky ImageNet~\cite{NIPS2012_4824}
+\begin{itemize}
+    \item Used dropout to prevent overfitting
+    \item ReLu
+    \item We start to go deep: 5 convolutional layers
+    \item Got best results to that date on a hard problem
 \end{itemize}
 
 ResNet~\cite{he2016deep}
@@ -145,6 +240,9 @@ ResNet~\cite{he2016deep}
     \item Crazy large: 152 layers but with lower `complexity'
     \item Then state of the art.
 \end{itemize}
+
+Current state of the art: ensembles
+(http://image-net.org/challenges/LSVRC/2017/results)
 
 \subsection{Object detection}
 
@@ -395,17 +493,22 @@ A convnet that branches out into two objecives.
 Model generalizes to unseen categories it has not seen during training. Strong
 work.
 
-
-
 \subsection{Analysis with satellite images}
 
 Mexico~\cite{babenko2017poverty} (There are two WB co-authors)
 
-Poverty mapping~\cite{Jean790}
+Poverty mapping~\cite{Jean790} Xie
 
 Population~\cite{doupe2016, robinson2017}
 
 Private sector~\cite{facebook, cnn_orbital}
+
+\subsection{Spacenet}
+
+https://github.com/SpaceNetChallenge
+
+Issue: collecting multiple buildings in small areas
+https://i.ho.lc/winning-solution-for-the-spacenet-challenge-joint-learning-with-openstreetmap.html
 
 \section{Satellite data}
 
@@ -433,22 +536,99 @@ Spaceknow can spot cars, buildings, etc
 
 Quasi free: Bing
 
+Urban environments https://github.com/adrianalbert/urban-environments/tree/master/dataset-collection
+
 \subsection{Expensive sources}
 
 Digital Globe, Planet Labs, Own drone data
 
 \subsection{Labelled data}
 
+Spacenet: https://spacenetchallenge.github.io/datasets/datasetHomePage.html
+
 \subsection{Augmentation}
 
 Talk about data augmentation. For example, U-Net used this.
 
-\section{Examples}
-
-\subsection{Building detection}
-
 \section{Recommendations}
 
+\appendix
+
+\section{VGG net}
+https://gist.github.com/baraldilorenzo/07d7802847aaad0a35d3
+
+\begin{minted}{python}
+from keras.models import Sequential
+from keras.layers.core import Flatten, Dense, Dropout
+from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
+from keras.optimizers import SGD
+import cv2, numpy as np
+
+def VGG_16(weights_path=None):
+    model = Sequential()
+    model.add(ZeroPadding2D((1,1),input_shape=(3,224,224)))
+    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2)))
+
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(128, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(128, 3, 3, activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2)))
+
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(256, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(256, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(256, 3, 3, activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2)))
+
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2)))
+
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(ZeroPadding2D((1,1)))
+    model.add(Convolution2D(512, 3, 3, activation='relu'))
+    model.add(MaxPooling2D((2,2), strides=(2,2)))
+
+    model.add(Flatten())
+    model.add(Dense(4096, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(4096, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(1000, activation='softmax'))
+
+    if weights_path:
+        model.load_weights(weights_path)
+
+    return model
+
+if __name__ == "__main__":
+    im = cv2.resize(cv2.imread('cat.jpg'), (224, 224)).astype(np.float32)
+    im[:,:,0] -= 103.939
+    im[:,:,1] -= 116.779
+    im[:,:,2] -= 123.68
+    im = im.transpose((2,0,1))
+    im = np.expand_dims(im, axis=0)
+
+    # Test pretrained model
+    model = VGG_16('vgg16_weights.h5')
+    sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(optimizer=sgd, loss='categorical_crossentropy')
+    out = model.predict(im)
+    print np.argmax(out)
+\end{minted}
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
