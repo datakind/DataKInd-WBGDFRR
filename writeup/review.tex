@@ -1,4 +1,3 @@
-
 \documentclass[12pt, a4paper, oneside, headinclude, footinclude]{article}
 
 \input{structure.tex}
@@ -79,8 +78,8 @@ deep learning, try~\cite{lecun2015deep}.
 The code is written in the Python language (version 3.7). This language is
 standard in both research and production of deep learning models. For an
 introduction to Python for economists, we recommend this tutorial by two
-top scholars
-(https://lectures.quantecon.org/py/index_learning_python.html).
+top
+scholars~\url{https://lectures.quantecon.org/py/index_learning_python.html}
 
 %----------------------------------------------------------------------------------------
 %	METHODS
@@ -92,9 +91,21 @@ In addition to many languages, there are many different deep learning
 libraries (or frameworks). We focus in this review on \texttt{Keras}. We
 make this choice because of Keras' ease of use and interpretability. 
 
-Downsides: speed, flexibility. Want evidence before making this claim. 
+There are many other libraries and frameworks. It is difficult to get hard numbers
+about usage because much of this is in industry. There are rough
+audiences for each library. TensorFlow is useful in research and production.
+There is a high level of boilerplate required and this is not for beginners.
+In fact, \texttt{Keras} (incorporated into \texttt{TensorFlow}) is recommended
+(~\url{https://www.tensorflow.org/tutorials/}). \texttt{PyTorch} markets
+itself for fast, flexible experimentation.\footnote{One of the authors is a
+big fan of PyTorch.} Version 1.0 will provide support for building models in
+production. Both \texttt{TensorFlow} and \texttt{PyTorch} are about as fast as
+each other, and both are faster thank \texttt{Keras}
+(~\url{https://wrosinski.github.io/deep-learning-frameworks/}). The trade off
+being ease of use versus speed. Other languages include the former most
+popular \texttt{Caffe}, Microsoft's \texttt{CNTK} and Apache's \texttt{MXNet}.
 
-Here is an example linear regression model with ten explanatory variables.
+Below is an example linear regression model with ten explanatory variables.
 We begin with importing some objects: an Input object which defines the shape
 of the explanatory varables; a Dense object which maps the data from the input
 shape to the output shape; a Model object which combines the two. Short of
@@ -102,7 +113,10 @@ comment lines and importing data, we can run a regression model in under ten
 lines. Running simple deep networks is a matter of adding additional
 components.
 
-\begin{minted}{python}
+\begin{minted}[
+frame=lines,
+linenos
+]{python}
 # import functions
 from keras.layers import Input
 from keras.layers import Dense
@@ -124,26 +138,155 @@ model.compile(optimizer='rmsprop', loss='rmse', metrics=['accuracy'])
 model.fit(X, y)  
 \end{minted}
 
-. That is, it is a matrix operation. The
-\texttt{activation} function takes the matrix output as an input and returns
-the model output.
-Optimizer: stochastic gradient descent. Passes losses back through the network
-via gradients.
+We discuss the arguments of \texttt{Dense} and \texttt{compile} below. 
 
-\subsection{Tensorflow, PyTorch, Caffe, MXNet, etc.}
+\section{Convolutional Neural Networks for computer vision tasks}
 
-TensorFlow: production
-PyTorch: research
-Caffe: ?
-MXNet: if you have amazon servers
-. That is, it is a matrix operation. The
-\texttt{activation} function takes the matrix output as an input and returns
-the model output.. That is, it is a matrix operation. The
-\texttt{activation} function takes the matrix output as an input and returns
-the model output.
-\section{Methods}
+Why don't we use linear regression?  An image is a three dimensional matrix of
+numbers. One dimension is the width (W) of the image, one is the height (H) of
+the image, and we typically have red, green and blue spectral bands. That is,
+we have $H\times W \times 3$ numbers in an image. We can flatten the three
+dimensions to one and feed this into a multinomial logistic regression model.
+The model can be implemented by making the following code changes.
 
-Focus on deep learning // supervised learning is mapping inputs to outputs.
+\begin{minted}[
+frame=lines,
+linenos
+]{python}
+\ldots
+H = \ldot               # height of images
+W = \ldots              # width
+num\_classes = \ldots   # number of classes to classify  
+inputs = Input(shape=(W * H * 3,))
+# set outcome (y) variable
+predictions = Dense(num\_classes, activation='sigmoid')(inputs)
+\ldots
+model.compile(optimizer='rmsprop', 
+              loss='categorical\_crossentropy', 
+              metrics=['accuracy'])
+\ldots
+\end{minted}
+
+This will work one some problems (), but we can do better by exploiting
+characteristics of the data. Images are different from other classification
+problems, as the value of a pixel is highly correlated with neighbouring
+pixels' values. Where neighbouring pixels' values are different, this contains
+meaning --- often this indicates an edge.
+
+Convolutional networks exploit the spatial autocorrelation in image data by
+taking $k\times k \times n$ \textit{filters} of data to generate features.
+Here $k$ is some integer (typically between 1 and 11), and $n$ is the depth of
+the input.  For RGB images $n$=3, but for satellite images with more bands, we
+can have $n>3$. 
+T
+A filter starts at the top corner, computes the dot product between the filter
+and the associated corner of the image. This generates a single number. The
+filter is moved a few pixels to the right and we again take the dot product.
+Sweeping across the image we generate a two dimensional matrix. An additional
+filter makes this a three dimensional matrix. The depth of this matrix is the
+number of filters.\footnote{For a good visual display of this process, see
+\url{http://cs231n.github.io/assets/conv-demo/index.html}.}
+
+To stack layers together for deeper models, there are three  additional core
+components. First, to allow the model to find non linear relationships, models
+will often include a non linear \textit{activation} function after the dot
+product and before the next step. Common activation functions include the
+\texttt{sigmoid, tanh and ReLU} functions. The \texttt{ReLU} is popular
+because it is fast and effective. For a dot product output $x$, the
+\texttt{ReLU} is $\max\{0, x\}$. 
+
+Second, to reduce the spatial size of the output, a \textit{pooling} reduces a
+$\ell\times\ell$ patch of the output to a single number, using the $\max$
+operator. Pooling reduces the amount of parameters in the model and helps
+against overfitting the data (Ref). Last, to control the image sizes through
+the network, a \textit{pad} of zero entry cells is often used around the input
+image. 
+
+The bulk of a convolutional neural network is stacking these layers on top of
+each other. After stacking these layers on top of each other, we flatten the
+output to a one dimensional layer. Dense layers are added on top. 
+
+\begin{minted}[
+frame=lines,
+linenos
+]{python}
+    # load libraries
+from keras.models import Model, Sequential
+from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Flatten, Input
+from keras.layers import LSTM, Embedding, Dense
+
+model = Sequential()
+    # add first convolutional layer with 64 filters of size 3 x 3
+    # and padding to retain image size
+    # and ReLU activation function
+model.add(Conv2D(64, (3, 3), 
+          activation='relu', 
+          padding='same', 
+          input_shape=(224, 224, 3)))
+    # add second convolutional layer with 64 filters of size 3 x 3
+    # and ReLU activation function
+    # no padding
+model.add(Conv2D(64, (3, 3), 
+          activation='relu'))
+    # add pooling
+model.add(MaxPooling2D((2, 2))
+    # ...
+    # a few more layers
+    # ...
+model.add(Flatten())
+model.add(Dense(4096, activation='sigmoid')(inputs)
+model.add(Dense(4096, activation='sigmoid')(inputs)
+    # ...
+
+\end{minted}
+
+\subsection{Training models}
+
+The question is then: how to train these (hundreds of) millions of parameters?
+The high level answer has two steps. First, observe the \textit{error}
+between predictions and actual labels. The \textit{loss} is a function of the
+error. For instance, one loss is the error squared. The second step is to pass
+this loss through the model, updating parameters that cause the most loss.
+
+This second step is known as \texttt{gradient descent}. Gradient descent is a
+way of finding the minimum of a function, in our case, the loss function. We
+take the gradient of the loss function and update the weights by the negative
+of the gradient (see code block below). 
+
+\begin{minted}
+[
+frame=lines,
+linenos
+]{python}
+# Vanilla Gradient Descent
+
+while True:
+  weights\_grad = evaluate\_gradient(loss\_fun, data, weights)
+    # perform parameter update
+  weights += - step\_size * weights\_grad
+\end{minted}
+
+Since we often train on many thousands (millions) of images, we cannot compute
+this in memory. Insted, a small batch of images is used and the model updated.
+This is called \texttt{batch gradient descent}. There is also stochastic
+gradient descent for  batches of size one observation. With enough batches,
+we obtain good results.
+
+Of course, we don't have to hard code the \texttt{evaluate\_gradient}
+function, we can rely on libraries to do this for us. We saw this in code
+block X above. We have the \texttt{sgd}, or stochastic gradient descent
+optimiser and the \texttt{rmse} or root mean squared error loss function.
+
+\begin{minted}[
+frame=lines,
+linenos
+]{python}
+# set loss function and optimizer
+model.compile(optimizer='sgd', 
+              loss='rmse')
+\end{minted}
+
 
 Also unsupervised learning. Feature extraction.
 
@@ -157,6 +300,10 @@ statistics]
 3. Much fewer neurons.
 
 Results of image analysis
+
+\section{Methods}
+
+
 
 \subsubsection{If you understand VGG-net, you're 80 per cent there}
 
@@ -196,7 +343,7 @@ x = preprocess_input(x)
 features = model.predict(x)
 \end{minted}
 
-Load `VGG16` object. The argument `include_top=False` means that we exclude
+Load \texttt{VGG16} object. The argument \texttt{include\_top=False} means that we exclude
 the top layers. 
 
 \subsection{Pretraining}
