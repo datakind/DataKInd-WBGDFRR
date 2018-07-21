@@ -273,10 +273,10 @@ This is called \texttt{batch gradient descent}. There is also stochastic
 gradient descent for  batches of size one observation. With enough batches,
 we obtain good results.
 
-Of course, we don't have to hard code the \texttt{evaluate\_gradient}
-function, we can rely on libraries to do this for us. We saw this in code
-block X above. We have the \texttt{sgd}, or stochastic gradient descent
-optimiser and the \texttt{rmse} or root mean squared error loss function.
+We don't have to hard code the \texttt{evaluate\_gradient} function, we can
+rely on libraries to do this for us. We saw this in code block X above. We
+have the \texttt{sgd}, or stochastic gradient descent optimiser and the
+\texttt{rmse} or root mean squared error loss function. 
 
 \begin{minted}[
 frame=lines,
@@ -288,43 +288,59 @@ model.compile(optimizer='sgd',
 \end{minted}
 
 
-Also unsupervised learning. Feature extraction.
+There many options for both the optimiser and the loss function. The
+development of optimisers is an ongoing area of research. Despite the choice,
+default options will be more than fine for experimentation. Results may vary
+so it can be worthwhile testing out different optimisers. Loss functions are
+selected by the problem at hand. For regression, root mean squared error loss
+functions are most common. For classification, categorical cross entropy is
+most common. 
 
-Transfer learning.
+\section{Literature}
 
-\subsection{Why convolutional neural networks}
+The above section is a quick introduction to convolutional neural networks. We
+go deeper in this section, focusing on key results in image classification,
+object detection and segmentation. These problems nest each other: to detect
+an object, a machine needs to know what the object is (classification) and
+where it is. To segment and image, the machine needs to know where the object
+is (detection and classification) and where the boundaries of these objects
+are. We begin with a classic of convolutional neural networks, VGG Net.
 
-1. Pixels are not independent of one another
-2. With pictures, only relative position matters [Spatially stationary
-statistics]
-3. Much fewer neurons.
+% Measure evolution --> performance on standard tasks
 
-Results of image analysis
+\subsection{If you understand VGG-net, you're 80 per cent there}
 
-\section{Methods}
+VGG Net~\cite{SimonyanZ14a} came second in LSVRC 2014 (losing to GoogleNet see
+below) with a 7.4 error rate on Image Net. Although not the best performing
+model, it has a simple architecture and is perfect for beginners. The
+architecture is a repeating set of convolutional layers to extract spatial
+imformation, activation layers for non linearities and max pooling to reduce
+information. There are two versions of VGG net, one with 16 and one with 19
+layers. VGG net has around 140 million parameters. Most of these are in the
+fully connected layers. 
 
+VGG net is widely used as a \textit{feature extractor}. VGG net can extract
+features by taking an arbitrary image and setting the output at the flattening
+stage. That is, we remove the fully connected layers (or `top') of the model
+and reduce the image to a vector. The vector retains some high dimensional
+representation of the image that can be used in a standard classifier, for
+example a logistic regression model. The original VGG net weights are used,
+and no training is undertaken. This is a common practice and can be used to
+train models on very few observations.
 
+\textbf{Recommendation:} \textit{when there are only a few observations that you can
+label (for instance, water bodies) at low cost, extract information from
+satellite/drone images using VGG net. Run a logistic regression model using
+extracted information as inputs and labeled images as outputs.}
 
-\subsubsection{If you understand VGG-net, you're 80 per cent there}
-
-VGG net is super simple and easy to explain. Started deep learning revolution.
-
-VGG Net~\cite{SimonyanZ14a}
-\begin{itemize}
-    \item Increased depth (16--19 layers) with smaller filters
-    \item First/Second places at ImageNet2014
-    \item Widely used as a base: need references.
-\end{itemize}
-
-Repetative blocks: see appendix
-\begin{itemize}
-    \item convolutional: non independence of pixels
-    \item zero padding: to maintain shape
-    \item pooling: to extract most useful information
-    \item flattening: extract all of the information
-\end{itemize}
-
-It's plug and play
+In the code block X we download the model on line 6. The full code of VGG net
+is in the appendix.\footnote{There are only 4096 layers in this version of the
+model}. In this block we download the whole model so that we can use the model
+to predict what's in the image (TO DO: run an example here). If we want to
+extract features, we can change the argument \texttt{include\_top} to be
+\texttt{False}. Rather than a list of object class weights, the output of
+\texttt{model.predict()} will be a 4096 dimensional vector. We can store these
+for use in another model.
 
 \begin{minted}{python}
 from keras.applications.vgg16 import VGG16
@@ -343,234 +359,148 @@ x = preprocess_input(x)
 features = model.predict(x)
 \end{minted}
 
-Load \texttt{VGG16} object. The argument \texttt{include\_top=False} means that we exclude
-the top layers. 
+\subsection{Other image classification}
 
-\subsection{Pretraining}
+There are many object classification models, from the groundbreaking LeNet
+(http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf) to recent ensemble
+models. We focus on a three key papers that provide additional tools to help
+improve performance.
 
-Unsupervised learning -- feature extraction. Benefit: others have used
-millions of images. These models extract information
+We begin with AlexNet, which won ImageNet in 2012~\cite{NIPS2012_4824}.
+AlexNet features three innovations which are still in use today. To begin,
+AlexNet was the first model to `go deep', with five convolutional layers.
+Second, the model used the \texttt{ReLU} activation function. Last, to prevent
+\textit{overfitting}, or having a model memorise training data and exhibit
+poor performance on new data, AlexNet used \textit{dropout}. Dropout worked by
+randomly setting the value of some parameters to zero during training. This
+way, the model could not rely on specific parameters to predict object
+classes. Instead, the model has to `spread' this information across
+parameters.
 
-Super common strategy with limited information. You extract features and then
-only train top 512, 1024, 2048, 4096x2 layers. Very useful (our work with
-population, https://arxiv.org/abs/1510.00098).
+Models went deeper over the next few years, but a puzzle arose: performance
+did not rise -- infact sometimes performance dropped -- with additional
+layers. This was a puzzle because models could simply pass on the same output
+through multiple layers rather than having degraded performance. This insight
+resulted in the residual learning framework that passes both the input $x$ and
+the output of a layer $f(x)$ to the next layer. With these skip connections
+the model can choose to discard elements of the modified layer output if
+elements do not help in prediction. An additional innovation is the lack of
+fully connected layers at the end of the model. These innovation allowed ResNet
+to have 152 layers and have lower model complexity~\cite{he2016deep}. ResNet
+won ILSVRC
+2015.\footnote{\url{https://towardsdatascience.com/squeeze-and-excitation-networks-9ef5e71eacd7}}
 
-evidence??
+The current state of the art involves creating a model out of an ensemble of
+models. The winner of the 2017 ImageNet challenge used ensembles and an
+innovation called `Squeeze and excitation'~\cite{wmw}. Squeeze-and-excitation
+networks weight the information across image channels. That is, if the red
+image channel helps with prediction more (say, for fire trucks), the model
+will learn to use channel to make predictions. SENets lowered the ImageNet
+classification error rate by almost 25 per cent.  That said, the object
+detection problem for image net is 99 per cent solved.  Research is
+progressing on more challenging problems. There is still a lot of room to
+improve for aerial or satellite imagery. In particular, SENets could exploit
+the 5-10 bands of information that comprise satellite images. We discuss this
+in section X and now move to detection where an object is.
 
-When you have lots of data and access to GPUs and your data is different to
-ImageNet, then there are advantages to training your own.
-
-When you have a small amount of labelled data, this works well.
-
-\section{Literature}
-
-\subsection{Image classification}
-
-LeNet (http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf)
-Conv => Pool => Conv => Pool => Flattened => prediction
-
-Krizhevsky ImageNet~\cite{NIPS2012_4824}
-\begin{itemize}
-    \item Used dropout to prevent overfitting
-    \item ReLu
-    \item We start to go deep: 5 convolutional layers
-    \item Got best results to that date on a hard problem
-\end{itemize}
-
-ResNet~\cite{he2016deep}
-
-\begin{itemize}
-    \item Residual learning framework
-    \item Degradation became an issue with deep models. This makes no sense,
-        you could just have a shallower model with identity mappings. So
-        residual networks contain the identity mapping.
-    \item Crazy large: 152 layers but with lower `complexity'
-    \item Then state of the art.
-\end{itemize}
-
-Current state of the art: ensembles
-(http://image-net.org/challenges/LSVRC/2017/results)
+\includegraphics[width=0.7\textwidth]{imagenet_classification_results.png}
+Source: \url{http://image-net.org/challenges/talks\_2017/ILSVRC2017\_overview.pdf}
 
 \subsection{Object detection}
 
-Classification + localising objects. The challenge: ``detect a \textit{potentially large
+The next step after identifying if an object is in an image is pointing out
+where the object is. This challenge, to ``detect a \textit{potentially large
 number of object instances with varying sizes in the same image} using a
 limited amount of computing resources.''~\cite[Their emphasis]{NIPS2013_5207}
+is known as object detection. Models that solve this problem will be useful for identifying
+where key sites --- like damaged roads --- are.
 
-Super basic model: slide a classifier across an image. This will be very slow.
+A brute force, basic model is to slide a classifier across an image. Since
+this model will have to run multiple times over a single image the model will
+be very slow. 
 
-Potentially
-useful~\url{https://towardsdatascience.com/object-detection-with-10-lines-of-code-d6cb4d86f606}
+An early innovation is to treat localisation as a regression
+problem~\cite{NIPS2013_5207}. This model uses a small standard convolutional
+neural network, but instead of a softmax classifier layer, the model uses a
+regression layer to output a binary mask: 1 for inside a bounding box, 0 for
+outside. One problem was that most of the image is outside the bounding box,
+so a model can learn to only output zeros. The authors increase the weights of
+non zero outputs to overcome this problem. Overall, there are five networks:
+one for box predictions, four others for where the {top, bottom, left, right}
+of the box. As with many of the models to come, the model is `pre-trained' on
+a classification task. 
 
-\textbf{Using regression to do this}~\cite{NIPS2013_5207}
+The next innovtion came with regions with CNN features
+(RCNN)~\cite{Girshick2014, Girshick2015}. RCNN improved on mAP (mean Average
+Precision) by more than 30\%. They get mAP of 53.3\%. Their idea is to extract
+some two thousand bounding boxes in a preprocessing step, run a classifier
+through these boxes and combine them at the end. They also use supervised pre
+training on a large dataset using the VGG net architecture. RCNN is multi
+stage, expensive and slow. 
 
-The DNN based regression outputs a binary mask of the bounding box. 
+Additional innovations increased the speed of this model.
+Fast-RCNN~\cite{Gershick2015} shares features across object proposals rather
+than recalculating features for each proposal. The model also features a multi
+task loss function for classification and a four dimensional regression for
+the bounding box. Faster RCNN}~\cite{Ren2017} overcomes the bottleneck of
+region proposals with a `Regional Proposal Network' (RPN). The RPN takes
+\textit{anchors}, or fixed points in the image, and first classifies whether
+there is any object there.  Second, the anchor bounding box is adjusted for a
+better fit. FasterRCNN is trainable end to end. So at the end you get a set of
+overlapping proposals. If we have two overlapping images, discard one with
+lower classification
+score.\footnote{https://towardsdatascience.com/squeeze-and-excitation-networks-9ef5e71eacd7}
 
-Seven layer network: five convolutional and two fully connected. ReLU and max
-pooling. Note that output much smaller than input.
+% \url{https://tryolabs.com/blog/2018/01/18/faster-r-cnn-down-the-rabbit-hole-of-modern-object-detection/}
+% Predicing (xmin, xmax, ymin, ymax) is hard. For instance, how to enforce
+% xmin < xmax
+% Useful overview:
+% \url{https://blog.athelas.com/a-brief-history-of-cnns-in-image-segmentation-from-r-cnn-to-mask-r-cnn-34ea83205de4}
 
-Instead of a softmax, they have a regression layer that outputs a binary mask:
-1 if image inside the box, 0 outside.\ 
+% \textbf{Mask RCNN}~\cite{he2017}
 
-p. 3 Because base network highly non convex -> no guarantee for optimal solution ->
-regularisation.
+% We can do segmentation as well! Have a third branch that allows segmentation. 
 
-Regularisation: objects are small relative to image size, so an output of all
-0s is super common. Use regularisation to increase weights of non zero
-outputs.
-
-Have five networks: one for box predictions, four others for {top, bottom,
-left, right}. 
-It is possible to share layers. 
-
-Since output smaller than inputs, need to upscale
-
-The details regarding refinement etc are a little confusing. 
-
-Training: model needs to be trained with a huge amount of training data:
-objects of different sizes need to occur at almost every location. << is this
-an issue for satellite monitoring?
-
-Pre training on classification task used.
-
-Need to train a single model per object type and mask type.
-
-Doesn't work super well: mAP = 30.5\%
-
-\textbf{RCNN}~\cite{Girshick2014, Girshick2015}
-
-Regions with CNN features
-Improved on mAP (mean Average Precision) by more than 30\%. They get mAP of
-53.3\%. 
-
-Idea
-\begin{enumerate}
-    \item extract some 2k bounding boxes (region proposals)
-    \item warp boxes and run through CNN and SVM to classify
-\end{enumerate}
-
-Use `recognition using regions' paradigm.
-Alternatives: Regression like above, sliding windows.
-
-A challenge --- labelled data is scarce. Common answer is to do unsupervised
-pre training followed by supervised fine tuning. They also use supervised pre
-training on a large dataset.
-
-There are many options for proposing regions, RCNN uses `selective-search'
-They also use VGG net for features.
-
-RCNN is multi stage, expensive and s l o w. `R-CNN is slow because it performs
-a ConvNet forward pass for each object proposal, without sharing computation.
-(fast RCNN paper)'
-
-\textbf{Fast-RCNN} single stage training algorithm. 
-
-Spatial Pyramid Pooling Networks (SPPnets). SPPnets compute a feature map
-for image, classifies each object proposal using shared features. But this is
-a multi stage pipeline.
-
-Multi task loss function
-    (a) classification
-    (b) 4d regression for bounding box
-
-It's faster than SPPnet/RCNN but there is still a bottle neck of region
-proposals
-
-Use a single network for feature extraction, classification and bounding box.
+% But there is a slight misalignment between bounding boxes and pixels because
+% of pixel integers. The original image is say 200 $\times$ 200 and the feature map is
+% say 30 * 30. So to select the top 15*15 corner we need 15 * 30 / 200 $\approx$
+% 2.25 pixels. RoIPool uses 2$\times$2. RoIAlign (this paper's innovation) uses
+% bilinear interpolation to get an idea of what the 2.25th pixel is.
 
 
-\textbf{Faster RCNN}~\cite{Ren2017}
+% \textbf{R-FCN}~\cite{NIPS2016_6465}
 
-Because of proposal bottleneck: they propose a `Region Proposal Network.' RPNs
-share layers with the object detection networks --- this allows a speed up.
-E.g.\ from 2 or 0.2s per image to 10ms per image.
+% The above apply a costly per region subnetwork hundreds of times :(
 
-The RPN is basically (?) an attention network.
+% \textit{Translation invariance} - the object can be anywhere in an image for
+% correct classification
 
-RPN takes anchors and (1) is this an object (2) can we adjust the anchor box
-a little to get better fit (rather than absolute corners, predict change from
-anchor box corners).
+% \textit{Translation variance} - if we move the object, the bounding box should
+% change. 
 
-FasterRCNN is trainable end to end.
+% Use an RPN for proposals.
 
-So at the end you get a set of overlapping proposals. If we have two
-overlapping images, discard one with lower classification score.
+Although these innovations increased the speed, detection was still slow. The
+You Only Look Once (YOLO) series of models model~\cite{redmon2016yolo} traded
+off accuracy for speed.\footnote{For a video showing the speed at which YOLO
+can work, see \url{http://www.youtube.com/watch?v=NM6lrxy0bxs}} YOLO divides
+an image into a grid. For each grid cell, there are a number of bounding
+boxes. The output of the model is 5 elements: four spatial components that
+modify the shape of a candidate bounding box and a measure of confidence.  The
+model then applies a classifier. The model uses Google's LeNet as a base model
+and shows good performance in new domains. YOLO version 2 improved performance
+through pretraining the model on the ImageNet classification task.
 
-\url{https://tryolabs.com/blog/2018/01/18/faster-r-cnn-down-the-rabbit-hole-of-modern-object-detection/}
-Predicing (xmin, xmax, ymin, ymax) is hard. For instance, how to enforce
-xmin < xmax
+Because of this and the model's spend, YOLO might be useful for a first pass
+over large areas of satellite images. The limitations of YOLO is that it is
+not the best for identifying many tightly connected objects (this is because
+of the hard coded grid size and number of bounding boxes per gridcell).
+Generalisation doesn't work well with different aspect ratios. 
 
-Potential code:
-\url{https://github.com/jinfagang/keras\_frcnn/blob/master/keras\_frcnn/vgg.py}
-
-Useful overview:
-\url{https://blog.athelas.com/a-brief-history-of-cnns-in-image-segmentation-from-r-cnn-to-mask-r-cnn-34ea83205de4}
-
-\textbf{Mask RCNN}~\cite{he2017}
-
-We can do segmentation as well! Have a third branch that allows segmentation. 
-
-But there is a slight misalignment between bounding boxes and pixels because
-of pixel integers. The original image is say 200 $\times$ 200 and the feature map is
-say 30 * 30. So to select the top 15*15 corner we need 15 * 30 / 200 $\approx$
-2.25 pixels. RoIPool uses 2$\times$2. RoIAlign (this paper's innovation) uses
-bilinear interpolation to get an idea of what the 2.25th pixel is.
-
-
-\textbf{R-FCN}~\cite{NIPS2016_6465}
-
-The above apply a costly per region subnetwork hundreds of times :(
-
-\textit{Translation invariance} - the object can be anywhere in an image for
-correct classification
-
-\textit{Translation variance} - if we move the object, the bounding box should
-change. 
-
-Use an RPN for proposals.
-
-\textbf{YOLO}~\cite{redmon2016yolo}
-
-\url{http://www.youtube.com/watch?v=NM6lrxy0bxs}
-
-YOLO is super fast. Not most accurate tho. Might be useful for large satellite
-areas.
-
-YOLO generalises to new domains (e.g. art)
-
-Divide image into S $\times$ S grid. 
-For each grid, 
-    1. have B bounding boxes. 
-    For each bounding box, 
-        predict 5 components (4 spatial {x, y, w, h}, 1 confidence). 
-        (x, y) -- center of the box relative to the bounds of the grid cell. 
-        (w, h) -- width and height relative to whole image
-        confidenc -- IOU between predicted and ground truth.
-    2. Predict C conditional class probabilities
-       Prob(Class | Object)
-       Only one set of class probabilities regardless of the number of boxes
-       B.
-
-At test time: the confidence * class probabilities for class specific
-confidence scores for each box.
-
-Use Google LeNet.
-
-Limitations: 
-1. strong spatial constraints -- hard coded grid size and number of
-bounding boxes and classes per box. Many small birds will be hard to predict.
---- also houses ---
-
-2. struggles to generalise to objects with new aspect ratios. so will want a
-variety of house angles. may be difficult to work with damaged buildings 
-
-YOLO v2: big step was using imagenet and backproping classification on this
-data
-
-\textbf{SSD}~\cite{liu2016ssd}
-
-Similar to YOLO but use multiple feature maps (grid sizes). Faster, Stronger
-than YOLO v1.
+An alternative to YOLO is Single Shot Detection (SSD) ~\cite{liu2016ssd}. SSD
+is similar to YOLO but uses multiple grid sizes. SSD was faster and stronger
+thand YOLO v1. The author has used this for building detection using satellite
+images (under review).
 
 \subsection{Image segmentation}
 
