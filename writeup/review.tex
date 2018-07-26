@@ -1,10 +1,11 @@
+
 \documentclass[12pt, a4paper, oneside, headinclude, footinclude]{article}
 
 \input{structure.tex}
 
-\title{\normalfont\spacedallcaps{Image analysis for disaster recovery, A DataKind report for the World Bank GFDRR}}
+\title{\normalfont\spacedallcaps{Deep learning image analysis for disaster recovery, A DataKind report for the World Bank GFDRR}}
 
-\author{\spacedlowsmallcaps{Krishna Bhogaonker \& Patrick Doupe}} 
+\author{\spacedlowsmallcaps{Patrick Doupe}} 
 
 \date{} 
 
@@ -38,7 +39,7 @@
 We discuss how the World Bank can use machine learning and satellite images to
 improve disaster relief efforts. We include a review of image analysis with
 convolutional neural networks. These networks are illustrated with code
-examples using the Keras deep learning library. 
+examples using the\texttt{Keras} deep learning library. 
 
 %----------------------------------------------------------------------------------------
 %	AUTHOR AFFILIATIONS
@@ -64,7 +65,7 @@ distinguishing between cats and dogs and to segmenting images by objects. In
 this article, we review this literature.
 
 The review's guiding question is \textit{how can we use
-images and computers to identify areas at risk in a crisis}. We do this in
+images and deep learning to identify areas at risk in a crisis}. We do this in
 two ways. First, by presentiting an intuitive understanding of various deep
 learning models and model types; second, by presenting applications of models
 using these methods and satellite images to generate insights. The philosophy
@@ -75,11 +76,16 @@ links to simple tutorials so that the reader can obtain a feel for how these
 things work. We present code rather than math. For a textbook treatment into
 deep learning, try~\cite{lecun2015deep}.
 
+We also present some applications of this, in industry and in the NGO sector.
+Much of the NGO sector applications use traditional Geographic Information
+System (GIS) approaches like change analysis. Although a useful tool, this is
+outside the scope of this
+report.\url{https://media.asf.alaska.edu/uploads/pdf/qgis_Environmental_Change_detection_v2.pdf}
+
 The code is written in the Python language (version 3.7). This language is
 standard in both research and production of deep learning models. For an
-introduction to Python for economists, we recommend this tutorial by two
-top
-scholars~\url{https://lectures.quantecon.org/py/index_learning_python.html}
+introduction to Python for economists, we recommend a tutorial by two leading
+economists~\cite{EconomicsIntroduction}.
 
 %----------------------------------------------------------------------------------------
 %	METHODS
@@ -89,42 +95,40 @@ scholars~\url{https://lectures.quantecon.org/py/index_learning_python.html}
 
 In addition to many languages, there are many different deep learning
 libraries (or frameworks). We focus in this review on \texttt{Keras}. We
-make this choice because of Keras' ease of use and interpretability. 
+make this choice because of\texttt{Keras}' ease of use and interpretability. 
 
 There are many other libraries and frameworks. It is difficult to get hard numbers
 about usage because much of this is in industry. There are rough
 audiences for each library. TensorFlow is useful in research and production.
 There is a high level of boilerplate required and this is not for beginners.
-In fact, \texttt{Keras} (incorporated into \texttt{TensorFlow}) is recommended
-(~\url{https://www.tensorflow.org/tutorials/}). \texttt{PyTorch} markets
-itself for fast, flexible experimentation.\footnote{One of the authors is a
-big fan of PyTorch.} Version 1.0 will provide support for building models in
-production. Both \texttt{TensorFlow} and \texttt{PyTorch} are about as fast as
-each other, and both are faster thank \texttt{Keras}
-(~\url{https://wrosinski.github.io/deep-learning-frameworks/}). The trade off
-being ease of use versus speed. Other languages include the former most
-popular \texttt{Caffe}, Microsoft's \texttt{CNTK} and Apache's \texttt{MXNet}.
+In fact, \texttt{Keras} (incorporated into \texttt{TensorFlow}) is
+recommended.\footnote{\url{https://www.tensorflow.org/tutorials/}} \texttt{PyTorch} markets
+itself for fast, flexible experimentation. Version 1.0 will provide support
+for building models in production. Both \texttt{TensorFlow} and
+\texttt{PyTorch} are about as fast as each other, and both are faster than
+\texttt{Keras}~\cite{Rosinski2017Deep}. The trade off being ease of use versus
+speed. Other languages include the former most popular \texttt{Caffe},
+Microsoft's \texttt{CNTK} and Apache's \texttt{MXNet}.
 
-Below is an example linear regression model with ten explanatory variables.
-We begin with importing some objects: an Input object which defines the shape
-of the explanatory varables; a Dense object which maps the data from the input
-shape to the output shape; a Model object which combines the two. Short of
-comment lines and importing data, we can run a regression model in under ten
-lines. Running simple deep networks is a matter of adding additional
-components.
+Figure~\ref{alg:linreg} is an example linear regression model with ten
+explanatory variables.  We begin with importing some objects: an Input object
+which defines the shape of the explanatory varables; a Dense object which maps
+the data from the input shape to the output shape; a Model object which
+combines the two. Short of comment lines and importing data, we can run a
+regression model in under ten lines. Running simple deep networks is a matter
+of adding additional components.
 
+\begin{figure}
 \begin{minted}[
 frame=lines,
 linenos
 ]{python}
-# import functions
 from keras.layers import Input
 from keras.layers import Dense
 from keras.models import Model
 
 # import data
-X = ...
-y = ...
+...
 
 # set amount of explanatory (x) variables 
 inputs = Input(shape=(10,))
@@ -133,11 +137,17 @@ predictions = Dense(1, activation='linear')(inputs)
 # define the model
 model = Model(inputs=inputs, outputs=predictions)
 # set loss function and optimizer
-model.compile(optimizer='rmsprop', loss='rmse', metrics=['accuracy'])
+model.compile(optimizer='rmsprop', 
+              loss='rmse', 
+              metrics=['accuracy'])
 # starts training
 model.fit(X, y)  
 \end{minted}
-
+    \caption[A linear regression model in\texttt{Keras}]{A linear regression model in
+   \texttt{Keras}. The input is the explanatory variables as a 10 column vector.
+    Models need to be compiled with loss functions and optimizers. We will
+    explain these and other terms in subsequent sections.\label{alg:linreg}}
+\end{figure}
 We discuss the arguments of \texttt{Dense} and \texttt{compile} below. 
 
 \section{Convolutional Neural Networks for computer vision tasks}
@@ -147,27 +157,35 @@ numbers. One dimension is the width (W) of the image, one is the height (H) of
 the image, and we typically have red, green and blue spectral bands. That is,
 we have $H\times W \times 3$ numbers in an image. We can flatten the three
 dimensions to one and feed this into a multinomial logistic regression model.
-The model can be implemented by making the following code changes.
+The model can be implemented by making the code changes in
+Figure~\ref{alg:linearimage}.
 
+\begin{figure}
 \begin{minted}[
 frame=lines,
 linenos
 ]{python}
-\ldots
-H = \ldot               # height of images
-W = \ldots              # width
-num\_classes = \ldots   # number of classes to classify  
+...
+H = ...          # height of images
+W = ...          # width
+num_classes =    # number of classes to classify  
 inputs = Input(shape=(W * H * 3,))
 # set outcome (y) variable
-predictions = Dense(num\_classes, activation='sigmoid')(inputs)
-\ldots
+predictions = Dense(num_classes, 
+                    activation='sigmoid')(inputs)
+...
 model.compile(optimizer='rmsprop', 
-              loss='categorical\_crossentropy', 
+              loss='categorical_crossentropy', 
               metrics=['accuracy'])
-\ldots
+...
 \end{minted}
-
-This will work one some problems (), but we can do better by exploiting
+    \caption[Using a linear regression for object detection]{Using a linear
+    regresion for object detection. The inputs now have a dimension equal to
+    the height $\times$ width $\times$ 3 (one for red, green and blue
+    channels). We also change the loss function from root mean squared error
+    loss to categorical cross entropy for our classification problem.
+\label{alg:linearimage}} \end{figure}
+This may work one some problems, but we can do better by exploiting
 characteristics of the data. Images are different from other classification
 problems, as the value of a pixel is highly correlated with neighbouring
 pixels' values. Where neighbouring pixels' values are different, this contains
@@ -178,34 +196,65 @@ taking $k\times k \times n$ \textit{filters} of data to generate features.
 Here $k$ is some integer (typically between 1 and 11), and $n$ is the depth of
 the input.  For RGB images $n$=3, but for satellite images with more bands, we
 can have $n>3$. 
-T
-A filter starts at the top corner, computes the dot product between the filter
-and the associated corner of the image. This generates a single number. The
-filter is moved a few pixels to the right and we again take the dot product.
-Sweeping across the image we generate a two dimensional matrix. An additional
-filter makes this a three dimensional matrix. The depth of this matrix is the
-number of filters.\footnote{For a good visual display of this process, see
-\url{http://cs231n.github.io/assets/conv-demo/index.html}.}
+
+% Have downloaded: Super nice visualisations of convolution
+% math:~\url{https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md}
+% .
+
+A filter starts at the top corner, computes the elementwise product between
+the filter and the associated corner of the image (See
+Figure~\ref{fig:convolution}).  This generates a single number. The filter is
+moved a few pixels to the right and we again take the dot product. Sweeping
+across the image we generate a two dimensional matrix. To make the output
+shape the same as the input shape, the input image can be \textit{pad}ded with
+zeros.  Adding additional filters makes the output three dimensional. The
+depth of output is equal to the number of filters. 
+% \footnote{for a good visual display of this process, see
+% \url{http://cs231n.github.io/assets/conv-demo/index.html}.}
+
+\begin{figure}
+	\centering
+    \includegraphics[width=0.7\textwidth]{numerical_no_padding_no_strides_00.pdf}
+    \caption[A convolutional operation] {An example of a convolutional
+    operation. The image has 5 pixels length and width. The convolutional
+    filter has size 3$\times$3. The elements are multiplied together and
+    summed to the amount in the top left cell in green. The next step would
+    shift the convolutional layer one pixel to the left.  Image source:
+    ~\cite{dumoulin2016guide}\label{fig:convolution}}
+\end{figure}
 
 To stack layers together for deeper models, there are three  additional core
 components. First, to allow the model to find non linear relationships, models
 will often include a non linear \textit{activation} function after the dot
 product and before the next step. Common activation functions include the
 \texttt{sigmoid, tanh and ReLU} functions. The \texttt{ReLU} is popular
-because it is fast and effective. For a dot product output $x$, the
-\texttt{ReLU} is $\max\{0, x\}$. 
+because it is fast and effective. For an output $x$, the
+\texttt{ReLU} is $\max\{0, x\}$.
 
 Second, to reduce the spatial size of the output, a \textit{pooling} reduces a
 $\ell\times\ell$ patch of the output to a single number, using the $\max$
-operator. Pooling reduces the amount of parameters in the model and helps
-against overfitting the data (Ref). Last, to control the image sizes through
-the network, a \textit{pad} of zero entry cells is often used around the input
-image. 
+operator (See Figure~\ref{fig:maxpooling}). Pooling layers act to extract
+what, at the expense of local details.  Pooling reduces the amount of
+parameters in the model and helps against overfitting the data.
+
+\begin{figure}
+	\centering
+    \includegraphics[width=0.7\textwidth]{numerical_max_pooling_02.pdf}
+    \caption[A max pooling operation] {An example of a max pooling operation.
+    The image has 5 pixels length and width. The pooling filter has size
+    3$\times$3. The maximum value of the image within the window is passed to
+    the output cell in green. The next step would shift the convolutional
+    layer one pixel to the left. Image source: ~\cite{dumoulin2016guide}
+    \label{fig:maxpooling}}
+\end{figure}
 
 The bulk of a convolutional neural network is stacking these layers on top of
 each other. After stacking these layers on top of each other, we flatten the
-output to a one dimensional layer. Dense layers are added on top. 
+output to a one dimensional layer. Dense layers are added on top. Once we
+understand these building blocks, coding them is straight forward (see
+Figure~\ref{alg:simple_convnet}).
 
+\begin{figure}
 \begin{minted}[
 frame=lines,
 linenos
@@ -217,30 +266,32 @@ from keras.layers import Flatten, Input
 from keras.layers import LSTM, Embedding, Dense
 
 model = Sequential()
-    # add first convolutional layer with 64 filters of size 3 x 3
+    # add first convolutional layer with 
+    # 64 filters of size 3 x 3
     # and padding to retain image size
     # and ReLU activation function
 model.add(Conv2D(64, (3, 3), 
           activation='relu', 
           padding='same', 
           input_shape=(224, 224, 3)))
-    # add second convolutional layer with 64 filters of size 3 x 3
+    # add second convolutional layer with 
+    # 64 filters of size 3 x 3
     # and ReLU activation function
     # no padding
 model.add(Conv2D(64, (3, 3), 
           activation='relu'))
     # add pooling
 model.add(MaxPooling2D((2, 2))
-    # ...
-    # a few more layers
-    # ...
 model.add(Flatten())
 model.add(Dense(4096, activation='sigmoid')(inputs)
-model.add(Dense(4096, activation='sigmoid')(inputs)
-    # ...
+model.add(Dense(10, activation='sigmoid')(inputs)
 
 \end{minted}
-
+    \caption[A simple convnet in\texttt{Keras}]{A simple convnet in\texttt{Keras}. This model
+    has two convolutional layers with ReLU activation functions, a max
+    poolution layer and a dense layer to predict 10
+    classes.\label{alg:simple_convnet}}
+\end{figure}
 \subsection{Training models}
 
 The question is then: how to train these (hundreds of) millions of parameters?
@@ -252,20 +303,26 @@ this loss through the model, updating parameters that cause the most loss.
 This second step is known as \texttt{gradient descent}. Gradient descent is a
 way of finding the minimum of a function, in our case, the loss function. We
 take the gradient of the loss function and update the weights by the negative
-of the gradient (see code block below). 
+of the gradient (see Figure~\ref{alg:graddesc}). 
 
+\begin{figure}
 \begin{minted}
 [
 frame=lines,
 linenos
 ]{python}
-# Vanilla Gradient Descent
-
 while True:
-  weights\_grad = evaluate\_gradient(loss\_fun, data, weights)
+  weights_grad = evaluate_gradient(loss_fun, 
+                                   data, 
+                                   weights)
     # perform parameter update
-  weights += - step\_size * weights\_grad
+  weights += - step_size * weights_grad
 \end{minted}
+    \caption[Pseudo code for basic gradient descent]{Pseudo code for basic
+    gradient descent. First, we calculate the gradient of the loss function
+    with respect to the model weights. We then use this to modify the model
+    weights. Source:~\cite{CS231n}\label{alg:graddesc} }
+\end{figure}
 
 Since we often train on many thousands (millions) of images, we cannot compute
 this in memory. Insted, a small batch of images is used and the model updated.
@@ -274,27 +331,22 @@ gradient descent for  batches of size one observation. With enough batches,
 we obtain good results.
 
 We don't have to hard code the \texttt{evaluate\_gradient} function, we can
-rely on libraries to do this for us. We saw this in code block X above. We
-have the \texttt{sgd}, or stochastic gradient descent optimiser and the
-\texttt{rmse} or root mean squared error loss function. 
+rely on libraries to do this for us. We saw this in Figures~\ref{alg:linreg}
+and~\ref{alg:linearimage} above. We have the \texttt{sgd}, or stochastic
+gradient descent optimiser and the \texttt{rmse} or root mean squared error
+loss function. 
 
-\begin{minted}[
-frame=lines,
-linenos
-]{python}
-# set loss function and optimizer
-model.compile(optimizer='sgd', 
-              loss='rmse')
-\end{minted}
-
+% Some evidence that adaptive weight mechanisms perform better on test set and
+% worse on training set (https://arxiv.org/abs/1705.08292). I.e. worse
+% generalisation.
 
 There many options for both the optimiser and the loss function. The
-development of optimisers is an ongoing area of research. Despite the choice,
-default options will be more than fine for experimentation. Results may vary
-so it can be worthwhile testing out different optimisers. Loss functions are
-selected by the problem at hand. For regression, root mean squared error loss
-functions are most common. For classification, categorical cross entropy is
-most common. 
+development of optimisers is an ongoing area of research
+(e.g.~\cite{wilson2017marginal}). Despite the choice, default options will be
+more than fine for experimentation. Results may vary so it can be worthwhile
+testing out different optimisers. Loss functions are selected by the problem
+at hand. For regression, root mean squared error loss functions are most
+common. For classification, categorical cross entropy is most common. 
 
 \section{Literature}
 
@@ -333,7 +385,7 @@ label (for instance, water bodies) at low cost, extract information from
 satellite/drone images using VGG net. Run a logistic regression model using
 extracted information as inputs and labeled images as outputs.}
 
-In the code block X we download the model on line 6. The full code of VGG net
+In Figure~\ref{alg:vgg} we download the model on line 6. The full code of VGG net
 is in the appendix.\footnote{There are only 4096 layers in this version of the
 model}. In this block we download the whole model so that we can use the model
 to predict what's in the image (TO DO: run an example here). If we want to
@@ -342,7 +394,11 @@ extract features, we can change the argument \texttt{include\_top} to be
 \texttt{model.predict()} will be a 4096 dimensional vector. We can store these
 for use in another model.
 
-\begin{minted}{python}
+\begin{figure}
+\begin{minted}[
+frame=lines,
+linenos
+]{python}
 from keras.applications.vgg16 import VGG16
 from keras.preprocessing import image
 from keras.applications.vgg16 import preprocess_input
@@ -358,13 +414,25 @@ x = preprocess_input(x)
 
 features = model.predict(x)
 \end{minted}
+    \caption[Using VGG16 in \texttt{Keras}]{Using VGG16 in \texttt{Keras}. On
+    line 6 we import the model architecture and model weights.\label{alg:vgg}}
+\end{figure}
 
-\subsection{Other image classification}
+\subsection{Object detection}
 
-There are many object classification models, from the groundbreaking LeNet
-(http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf) to recent ensemble
-models. We focus on a three key papers that provide additional tools to help
-improve performance.
+There are many other object classification models, from the groundbreaking
+LeNet~\cite{lecun1998gradient} to recent ensemble models. We focus on a three
+key papers that provide additional tools have helped to drive progress in
+object classification (see Figure~\ref{fig:imagenetoverview}).
+
+\begin{figure}
+    \centering
+\includegraphics[width=0.7\textwidth]{imagenet_classification_results.png}
+    \caption[ImageNet classification results, 2010--2017]{ImageNet
+    classification results, 2010--2017. We see that the error rate dropped
+    rapidly over 2011--2015. Source: Image Net
+    Overivew\footnote{\url{http://image-net.org/challenges/talks_2017/ILSVRC2017_overview.pdf}}\label{fig:imagenetoverview}}
+\end{figure}
 
 We begin with AlexNet, which won ImageNet in 2012~\cite{NIPS2012_4824}.
 AlexNet features three innovations which are still in use today. To begin,
@@ -403,10 +471,7 @@ improve for aerial or satellite imagery. In particular, SENets could exploit
 the 5-10 bands of information that comprise satellite images. We discuss this
 in section X and now move to detection where an object is.
 
-\includegraphics[width=0.7\textwidth]{imagenet_classification_results.png}
-Source: \url{http://image-net.org/challenges/talks\_2017/ILSVRC2017\_overview.pdf}
-
-\subsection{Object detection}
+Evidence that the number of bands does not for building detection~\cite{2017Panchromatic}
 
 The next step after identifying if an object is in an image is pointing out
 where the object is. This challenge, to ``detect a \textit{potentially large
@@ -442,7 +507,7 @@ Additional innovations increased the speed of this model.
 Fast-RCNN~\cite{Gershick2015} shares features across object proposals rather
 than recalculating features for each proposal. The model also features a multi
 task loss function for classification and a four dimensional regression for
-the bounding box. Faster RCNN}~\cite{Ren2017} overcomes the bottleneck of
+the bounding box. Faster RCNN~\cite{Ren2017} overcomes the bottleneck of
 region proposals with a `Regional Proposal Network' (RPN). The RPN takes
 \textit{anchors}, or fixed points in the image, and first classifies whether
 there is any object there.  Second, the anchor bounding box is adjusted for a
@@ -497,6 +562,14 @@ not the best for identifying many tightly connected objects (this is because
 of the hard coded grid size and number of bounding boxes per gridcell).
 Generalisation doesn't work well with different aspect ratios. 
 
+A recent extension modifies YOLO for satellite images~\cite{YOLT}. In addition
+to image augmentation, the authors have two innovations that help identify
+images in satellite images. First, they use upsampling and ensemble models
+at different scales to capture small images. For instance, one classifier for
+airports and another for aeroplanes. Second, they define a new network
+architecture with a denser final output for smaller bounding boxes.
+
+
 An alternative to YOLO is Single Shot Detection (SSD) ~\cite{liu2016ssd}. SSD
 is similar to YOLO but uses multiple grid sizes. SSD was faster and stronger
 thand YOLO v1. The author has used this for building detection using satellite
@@ -504,11 +577,22 @@ images (under review).
 
 \subsection{Image segmentation}
 
+The final task we investigate is image segmentation. The challenge here is to
+outline the boundary of the object (see Figure X). In one sense this is a
+simple extension of classification: but one prediction per pixel rather than
+one prediction per picture. Segmentation would be useful in tracing out road
+paths and distinguishing regions with damaged properties versus non damaged. 
+
 \includegraphics[width=0.5\textwidth]{Figures/segmentation-example.png}
 
-In one sense this is a simple extension of classification: but one prediction
-per pixel rather than one prediction per picture.
+A common metric in segmentation problems is the mean intersection of
+prediction and ground truth over their union. When the prediction is perfect,
+then the intersection equals the union and the metric is 1. When no predicted
+pixel overlaps with the ground truth, the metric is 0. Calculating this
+measure for each image then averaging is preferred to averaging over the test
+set~\cite{csurka2013good}.
 
+% In fact, early models ran a class model over each pixel~\cite{NIPS2015_5852}. 
 With segmenation, there is a tension between `semantics and location.'
 \textit{Semantics} is the question of what, \textit{location} asks where.
 Local information helps answer the former and global information helps answer
@@ -517,115 +601,246 @@ models prior to the era of fully end to end differentiable models. This
 tension also explains the innovations beyond basic CNNs used for
 classification.
 
-Old methods: classifier applied to each object location and scale.
-See~\cite{NIPS2015_5852}.
-
-\paragraph{First fully convnet (trained end to end) segmenter}
-
-BTW, very good write up on convnets.~\cite{long2015fully}
-
-\includegraphics[width=0.5\textwidth]{Figures/long-segmentation.png}
-\begin{itemize}
-    \item uses in network upsampling
-    \item doesn't require complicated chaining of pieces
-    \item can use pre trained models
-    \item use a skip architecture to combine coarse semantic information and shallow
-appearance information.
-\end{itemize}
-There is a super easy way to make a simple CNN classifier a segmenter: make
-the fully connected layers have a different height and width for each of the
-4096 components.
-
-An issue: by the time you've gotten to predicting a pixel, you've lost a lot
-of the information on the surrounding pixels. The authors get around this by
-bringing intermediate layers back into the prediction.
+\cite{long2015fully} developed the first end to end trained CNN for
+segmentation.\footnote{BTW, very good write up on
+convnets.~\cite{long2015fully}} \cite{long2015fully}'s insight was to think of
+a fully connected layer as a 1 x 1 convolutional layer that covers the whole
+image. Using a standard convnet (e.g. VGG net) did not work well as by the
+time you've gotten to predicting a pixel, you've lost a lot of the information
+on the surrounding pixels. The authors get around this by bringing
+intermediate layers back into the prediction. A skip architecture brings
+intermediate layers back into prediction, allowing the model to combine
+coarser semantic information and finer appearance information. 
 
 \includegraphics[width=0.75\textwidth]{Figures/skip-segmentation.png}
 
-Some more~\cite{chen2018, NIPS2015_5852}
+The output of FCN was still too coarse. The solution was to bring in more
+skips. Many models do this~\cite{segnet, unet}.\footnote{If you like, you can
+always combine the two~\url{https://github.com/ykamikawa/Seg-UNet}}
+U-Net~\cite{unet} uses a convnet to \textit{encode}, or extract features. A
+\textit{decoder} network then converts these features into a per pixel
+classification. Because the feature is a small dense representation, the
+decoder network must \textit{upsample} -- or `blow up' -- the image from the
+dense representation.  Because upsampling is sparse, the output from the
+corresponding encoding stage is concatenated to the dense representation. A
+benefit of UNets is that we can use any pretrained network to encode the data.
+Unets are commonly used in the data science community. Segnet uses a similar
+architecture, but rather than the memory intensive step of transfering
+features, the model transfers indices from the maxpool steps.
 
-\paragraph{DeepLab}~\cite{chen2018}
+An alternative attack on max pooling is to discard them and use components
+that compress class information while retaining
+location~\cite{chen2018,dilated2017}.  These components, called
+\textit{atrous} convolutions, generate low to mid resolution outputs. These
+models require an additional step to refine the segmentation. Conditional
+Random Fields (CRF) are used most often.  CRFs take the output of convent and
+image and tries to map the convnet output to the rgb together. (e.g. looking
+for edges).
 
-\begin{itemize}
-    \item convolution with upsampled filters --- allows control of resolution
-        (or the context without increasing the number of parameters)
-    \item spatial pyramid pooling: segment at multiple scales
-    \item use conditional random fields to improve location accuracy (max
-        pooling and down sampling lower locational accuracy)
-\end{itemize}
+(Dilation figure here).
 
-They do this upsampling \textit{algorithme a trous} thing that~\cite{NIPS2015_5852}
-do (i think).
+\begin{minted}{python}
+model.add(Conv2D(..., dilation_rate=2)) 
+\end{minted}
 
-\paragraph{Learning to segment object candidates}~\cite{NIPS2015_5852}
+A further alternative uses interpolation. Mask RCNN~\cite{he2017} extends
+faster RCNN by adding a branch to the model for pixel level classification.
+Since the output of the CNN is smaller than the ground truth image, some form
+of \textit{upsampling} or increasing the size of output images is required.
+Mask RCNN achieves this by using interpolation. Say our image size is 512 x
+512, we are proposing a region in the top left 25 x 25 pixel corner, and
+feature map is size 30 x 30. Then our region of interest is 25 $\times$ 30 /
+512 $\approx$ 1.46 pixels of the feature map. A naive implementation would use
+integer division for a region proposal of 1 pixel. Mask RCNN uses bilinear
+interpolation to estimate what the 1.46th pixel would look like.
 
-A model trained with two objectives
-A convnet that branches out into two objecives.
 
-\begin{enumerate}
-    \item given an image patch ---  output a class agnostic segmentation mask
-    \item the likelihood of the patch being centered on a full object
-\end{enumerate}
+% outputs. A
 
-Model generalizes to unseen categories it has not seen during training. Strong
-work.
+% Repeated pooling shrinks output size. Long range skip connections. Use
+% \textit{chained residual pooling} which  is  able  to  capture
+% background context from a large image region. It does so  by  efficiently
+% pooling  features  with  multiple  window sizes and fusing them together with
+% residual connections and learnable weights
 
-\subsection{Analysis with satellite images}
+% \paragraph{Learning to segment object candidates}~\cite{NIPS2015_5852} 
 
-Mexico~\cite{babenko2017poverty} (There are two WB co-authors)
+\section{Analysis with satellite images}
 
-Poverty mapping~\cite{Jean790} Xie
+We now look at what has been done with satellite images. There are three
+branches of knowledge we can look at. First, there is the academic literature.
+Second, data science competitions. Last, we have industry. In this last branch
+we can only make educated guesses at how.
 
-Population~\cite{doupe2016, robinson2017}
+Much of the academic literature takes a pre-trained convnet or common
+architecture and trains the model on the task at hand. Two papers have focused
+on mapping poverty~\cite{babenko2017poverty,Jean79}. \cite{babenko2017poverty}
+use satellite images, land use maps and household survey data to map
+poverty in Mexico.\footnote{There are two authors working for the World Bank.}
+The authors use GoogLeNet and VGG net, but find had best out of sample
+performance. They also trained a model using RGB bands and near infrared band.
+Because ImageNet models use the three RGB bands, the model had to be retrained
+from scratch.  Around fifty per cent of variation in local poverty can be
+predicted through satellite images and a convnet alone. This increases to
+around sixty per cent when they include land use cover as a feature. It
+is not clear from the paper how they include land use cover information
+maps. It does not seem to be a feature layer, perhaps it was used as a
+regression input with the convnet output.
 
-Private sector~\cite{facebook, cnn_orbital}
+\begin{equation}
+\textup{composite prediction} = \alpha + \beta\textup{convnet output} + \phi\textup{land use}
+\end{equation}
 
-\subsection{Spacenet}
+\cite{Jean79} estimate poverty across Sub Saharan Africa. Since ground truth
+values are difficult to come by, they use night lights as a proxy. They fine
+tune a pretrained convnet (VGG 8 layer) to predict night lights. These
+features are fed into a ridge regression model (LASSO) to estimate poverty
+taken from household surveys. The satellite data is taken from the Google
+Static Maps API. Pixels are approximately 1km square. The model's transfer
+learning is promising. Figure X shows the average $r^2$ for models trained on
+one country and evaluated each country.
 
-https://github.com/SpaceNetChallenge
+\includegraphics[width=0.7\textwidth]{transfer-learning-poverty.png}
 
-Issue: collecting multiple buildings in small areas
-https://i.ho.lc/winning-solution-for-the-spacenet-challenge-joint-learning-with-openstreetmap.html
+A similar strand of research maps population~\cite{doupe2016, robinson2017}.
+\cite{doupe2016} map population in Kenya and Tanzania using a VGG-net style
+architecture. The authors exploit all eight landsat bands by retraining a
+model from scratch. Because population across satellite images follows a power
+law, the log of popualtion is estimated.~\cite{robinson2017} also train their
+own model. They use a two step procedure to obtain raw estimates for
+population. The first gets coarse values at the pixel level. These are
+combined at the county level. The results are directly interpretable as
+population estimates. Facebook~\cite{facebook} are also estimating
+population. This seems to be a building segmentation map and populations are
+distributed throughout the area inferred by the segmentation map. In addition,
+they use segmenting tools to identify roads~\cite{demir2018}.
+
+A problem with satellite images is that they are either free and low
+resolution or expensive an low resolution. In the past few years, data science
+competitions have been organised around small, high resolution datasets. The
+two SpaceNet challenges asked participants to segment roads, buildings and
+water bodies, amongst others.\url{https://github.com/SpaceNetChallenge}
+
+In the first edition, the test challenge was to predict buildings in Rio de
+Janiero, Brazil. This is particularly challenging because buildings in Rio are
+small and densely built. Four of the top five entries used convnets. Second
+place used SSD, third MNC whereas forth and fifth trained their own model.
+Fifth place in particular placed a large emphasis on image augmentation. The
+winner used a sequence of well trained random forest models.
+
+In the second edition, additional cities were added. These cities (Las Vegas,
+Paris, Shanghai and Khartoum) all have a different built infrastructure. The
+winner used U-Net. To use all the spectral bands, the model had to be trained
+from scratch. This model did struggle with small and L shaped buildings. The
+second and third places used models based on the chained random forests models
+that won the first edition. There is a new
+competition\url{http://deepglobe.org/challenge.html}.
+
+
+\subsection{Applications in industry}
+
+Many industries use satellite data to generate information. Unfortunately, we
+do not have access to proprietry methods; however, understanding applications
+may assist in generating ideas. Common applications include crop monitoring
+and forecasting,\footnote{\url{https://telluslabs.com/}} water cover and
+use,\footnote{\url{https://www.vandersat.com/}} 
+car park occupancy rates (consumer demand) and oil
+reserves\footnote{\url{http://www.orbitalinsight.com/}}. Of note is the
+insurance industry, who use satellite images for predicting claims amounts,
+and identifying damaged or unaffected assets. As one would expect, the
+intelligence community and associated research groups are doing work
+too.\footnote{For instance, CosmiQ
+(\url{http://www.cosmiqworks.org/space-30/}) have developed a time series
+model to map infrastructure after a hurricane~\cite{cosmiq} and a tool to
+create your own time series from satellite
+imagery~\url{https://github.com/CosmiQ/CometTS}}
+
+Consulting companies~\cite{CosmiQ,Satellite}
+https://www.spaceknow.com/satellite-ai/
+
+\subsection{NGO applications}
+
+\cite{2016Burma}: HRW used before and after photos to identify burned buildings in
+Rohingya villages throughout Burma. Uncertain how they did this.
+
+\cite{2015Nigeria}: Amnesty International used satellite images to identify
+buildings and villages attacked by Boko Haram in Nigeria.
+Before and after "change detection"
+False color image analysis to track distruction. Also used this for 2011 Oil Spill
+in Niger~\cite{Koettl2011}j
+Identify mass graves in Afghanistan~\cite{2013AAAS}. Locations known prior to
+analysis.
+For more applications, see~\cite{2014Human}.
+
+For more use on using satellite analysis:
+~\cite{Satellite,Making,2018High-Resolution}
 
 \section{Satellite data}
 
-Planet Labs: \url{https://www.planet.com/}
-Planet Labs free datasets:
-~\url{https://www.planet.com/disasterdata/datasets/}
-    ``We provide limited access to Explorer for up to 30 days to qualified disaster
-    volunteer organizations, humanitarian organizations, and other coordinating
-    bodies.''
-3-5 meter imagery anywhere in the world. This may be too large for small
-buildings.
+There are many sources of satellite imagery.\footnote{The following URLs
+provide a good list as of July 2018:
+\url{https://gisgeography.com/free-satellite-imagery-data-list/}
+\url{https://docs.google.com/spreadsheets/d/1oFY_TX5QRFyAAu-nxeClnOFB1epSlSDWEHoMalvv0Qs}}
+Satellite imagery is expensive, but free or limited options are available. FOr
+isntance, both LANDSAT and the Copernicus mission images are free of charge and
+available through the USGS Earth
+Explorer\footnote{\url{https://earthexplorer.usgs.gov/}} and the Scientific
+Data Hub\footnote{\url{https://scihub.copernicus.eu/dhus/}} or the
+Google Earth Engine.\footnote{\url{https://earthengine.google.com/}} LANDSAT
+has the benefit of a forty year history of images, although at 30m (15m
+panchromatic) the resolution is course. The Copernicus Programme's Sentinel
+satellites have a resolution of 10m. At these resolutions, individual
+buildings will be difficult to isolate.
 
-**Insurance companies do this** ~~ Planet labs e book.
-Predicting claim amounts // categorize unaffected assets, damaged or requiring
-assessor // 
-Nice image of water damage. I believe there is a way of measuring this from
-space.
+We know that image resolution matters~\cite{2017The}. It's difficult with the
+naked eye to locate a 10 square meter building with 10 square meter pixels.
+For the most part, higher resolution imagery typically costs money. For
+humanitarian and research purposes, small datasets can be provided. For
+instance, Planet and Satellogic have researcher and humanitarian
+access~\cite{Planet,Satellogic}. I would not be surprised if other providers
+matched this offer. In addition, Google maps and Bing Maps have APIs that
+allows users do download a limited amount of  undated high resolution images.
+The images have a watermark which can easily be cropped out.
+Table~\ref{tab:meinetabelle} presents an overview of high resolution image
+providers.
 
-Satellogic has images with 30 bands. And are open for humanitarian efforts. ~\url{https://www.satellogic.com/commitment-to-science}
-
-TellusLabs do crop monitoring and forecasting. VanderSat also on land use
-
-Spaceknow can spot cars, buildings, etc
-~\url{https://www.spaceknow.com/satellite-ai/}
-
-Quasi free: Bing
-
-Urban environments https://github.com/adrianalbert/urban-environments/tree/master/dataset-collection
-
-\subsection{Expensive sources}
-
-Digital Globe, Planet Labs, Own drone data
+\begin{table}[htb]
+\caption{A list of satellite imagery providers}
+\begin{tabular}{lcr}
+Provider & Free & Description \\
+\hline
+    Planet & Limited & 3--5m imagery anywhere in the world \\
+    Satellogic & Limited & 30 bands, 30m resolution \\
+    UrtheCast & N & 0.75m resolution, video available \\    
+    Digital Globe & N & Global coverage, 30 cm resolution \\ 
+    Bing & Y & High resolution, undated \\
+    Google & Y & High resolution, undated \\
+\end{tabular} 
+\label{tab:meinetabelle}
+\end{table}
 
 \subsection{Labelled data}
 
-Spacenet: https://spacenetchallenge.github.io/datasets/datasetHomePage.html
+Training models requires labelled data. One option is to do this by hand or
+outsource to services like Mechanical
+Turk.\footnote{\url{https://www.mturk.com/}} For drone data or specific
+objects to detect, this is a good option. For buildings, roads or waterways,
+there are a few datasets of use. Some of these are down, but may still be
+available through other researchers, or asking the organisers.
 
-\subsection{Augmentation}
-
-Talk about data augmentation. For example, U-Net used this.
+First, there is the Spacenet challenge
+data.\footnote{\url{https://spacenetchallenge.github.io/datasets/datasetHomePage.html}}
+This data appears to be down at present. The data consists of very high
+resolution (30--50cm) images of five cities. The data contains labels of
+buildings, trees, cards, roads and waterways. More labelled urban environments
+can be found in Urban Environment
+dataset.\footnote{\url{https://github.com/adrianalbert/urban-environments/tree/master/dataset-collection}}
+For labels, there are two good sources. First, the Urban Atlas
+project.\footnote{\url{https://www.eea.europa.eu/data-and-maps/data/copernicus-land-monitoring-service-urban-atlas}}
+This project is used in the Urban Environment dataset. A second option is
+OpenStreetMap.\footnote{\url{https://www.openstreetmap.org}} These maps are
+created by volunteers, much like wikipedia. Your mileage may vary with
+building accuracy. 
 
 \section{Recommendations}
 
