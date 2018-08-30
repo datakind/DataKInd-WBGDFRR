@@ -1,0 +1,53 @@
+%----------------------------------------------------------------------------------------
+%	REQUIRED PACKAGES
+%----------------------------------------------------------------------------------------
+
+\usepackage[
+nochapters, 
+beramono, 
+eulermath,
+pdfspacing, 
+dottedtoc 
+]{classicthesis} 
+
+\usepackage{arsclassica} 
+\usepackage{listings} 
+\usepackage{minted} 
+\usepackage{sourcecodepro}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc} 
+\usepackage{graphicx} 
+\graphicspath{{Figures/}} 
+\usepackage{enumitem} 
+\usepackage{lipsum} 
+\usepackage{subfig} 
+\usepackage{amsmath,amssymb,amsthm} 
+\usepackage{varioref} 
+\usepackage{url}
+
+%----------------------------------------------------------------------------------------
+%	THEOREM STYLES
+%---------------------------------------------------------------------------------------
+
+\theoremstyle{definition} 
+\newtheorem{definition}{Definition}
+
+\theoremstyle{plain} 
+\newtheorem{theorem}{Theorem}
+
+\theoremstyle{remark} 
+
+%----------------------------------------------------------------------------------------
+%	HYPERLINKS
+%---------------------------------------------------------------------------------------
+
+\hypersetup{
+colorlinks=true, breaklinks=true, bookmarks=true,bookmarksnumbered,
+urlcolor=webgreen, linkcolor=RoyalBlue, citecolor=webgreen, 
+pdftitle={}, 
+pdfauthor={\textcopyright}, 
+pdfsubject={}, 
+pdfkeywords={}, 
+pdfcreator={pdfLaTeX}, 
+pdfproducer={LaTeX with hyperref and ClassicThesis} 
+}
