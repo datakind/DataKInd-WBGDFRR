@@ -1,0 +1,27 @@
+# LaTeX temporary files
+*.aux
+*.log
+*.toc
+
+# Latexmk
+*.fdb_latexmk
+
+# SyncTeX
+*.synctex.gz
+
+# LaTeX Beamer
+*.snm
+*.vrb
+*.nav
+*.out
+
+# BibTeX
+*.bbl
+*.blg
+
+# Minted code folder
+
+_minted-sri_lanka_execution_plan/default-pyg-prefix.pygstyle
+_minted-sri_lanka_execution_plan/default.pygstyle
+_minted-sri_lanka_execution_plan/*
+
